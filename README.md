@@ -4,219 +4,95 @@
 [![](https://images.microbadger.com/badges/image/wurstmeister/kafka.svg)](https://microbadger.com/images/wurstmeister/kafka "Get your own image badge on microbadger.com")
 [![Build Status](https://travis-ci.org/wurstmeister/kafka-docker.svg?branch=master)](https://travis-ci.org/wurstmeister/kafka-docker)
 
-kafka-docker
+kafka-docker(한국어 요약본)
 ============
+[튜토리얼 문서]([http://wurstmeister.github.io/kafka-docker/](http://wurstmeister.github.io/kafka-docker/))를 따라하다보면 분명 안 되는 부분들이 존재한다. 
+그 부분들을 보강하기 위하여 코멘트를 일부 추가한다.
 
-Dockerfile for [Apache Kafka](http://kafka.apache.org/)
-
-The image is available directly from [Docker Hub](https://hub.docker.com/r/wurstmeister/kafka/)
-
-Tags and releases
------------------
-
-All versions of the image are built from the same set of scripts with only minor variations (i.e. certain features are not supported on older versions). The version format mirrors the Kafka format, `<scala version>-<kafka version>`. Initially, all images are built with the recommended version of scala documented on [http://kafka.apache.org/downloads](http://kafka.apache.org/downloads). Available tags are:
-
-- `2.13-2.7.0`
-- `2.13-2.6.0`
-- `2.12-2.5.0`
-- `2.12-2.4.1`
-- `2.12-2.3.1`
-- `2.12-2.2.2`
-- `2.12-2.1.1`
-- `2.12-2.0.1`
-- `2.11-1.1.1`
-- `2.11-1.0.2`
-- `2.11-0.11.0.3`
-- `2.11-0.10.2.2`
-- `2.11-0.9.0.1`
-- `2.10-0.8.2.2`
-
-Everytime the image is updated, all tags will be pushed with the latest updates. This should allow for greater consistency across tags, as well as any security updates that have been made to the base image.
-
----
-
-## Announcements
-
-* **04-Jun-2019** - Update base image to openjdk 212 ([Release notes](https://www.oracle.com/technetwork/java/javase/8u212-relnotes-5292913.html). Please force pull to get these latest updates - including security patches etc.
-
----
-
-## Pre-Requisites
-
-- install docker-compose [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
-- modify the ```KAFKA_ADVERTISED_HOST_NAME``` in [docker-compose.yml](https://raw.githubusercontent.com/wurstmeister/kafka-docker/master/docker-compose.yml) to match your docker host IP (Note: Do not use localhost or 127.0.0.1 as the host ip if you want to run multiple brokers.)
-- if you want to customize any Kafka parameters, simply add them as environment variables in ```docker-compose.yml```, e.g. in order to increase the ```message.max.bytes``` parameter set the environment to ```KAFKA_MESSAGE_MAX_BYTES: 2000000```. To turn off automatic topic creation set ```KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'```
-- Kafka's log4j usage can be customized by adding environment variables prefixed with ```LOG4J_```. These will be mapped to ```log4j.properties```. For example: ```LOG4J_LOGGER_KAFKA_AUTHORIZER_LOGGER=DEBUG, authorizerAppender```
-
-**NOTE:** There are several 'gotchas' with configuring networking. If you are not sure about what the requirements are, please check out the [Connectivity Guide](https://github.com/wurstmeister/kafka-docker/wiki/Connectivity) in the [Wiki](https://github.com/wurstmeister/kafka-docker/wiki)
-
-## Usage
-
-Start a cluster:
-
-- ```docker-compose up -d ```
-
-Add more brokers:
-
-- ```docker-compose scale kafka=3```
-
-Destroy a cluster:
-
-- ```docker-compose stop```
-
-## Note
-
-The default ```docker-compose.yml``` should be seen as a starting point. By default each broker will get a new port number and broker id on restart. Depending on your use case this might not be desirable. If you need to use specific ports and broker ids, modify the docker-compose configuration accordingly, e.g. [docker-compose-single-broker.yml](https://github.com/wurstmeister/kafka-docker/blob/master/docker-compose-single-broker.yml):
-
-- ```docker-compose -f docker-compose-single-broker.yml up```
-
-## Broker IDs
-
-You can configure the broker id in different ways
-
-1. explicitly, using ```KAFKA_BROKER_ID```
-2. via a command, using ```BROKER_ID_COMMAND```, e.g. ```BROKER_ID_COMMAND: "hostname | awk -F'-' '{print $$2}'"```
-
-If you don't specify a broker id in your docker-compose file, it will automatically be generated (see [https://issues.apache.org/jira/browse/KAFKA-1070](https://issues.apache.org/jira/browse/KAFKA-1070). This allows scaling up and down. In this case it is recommended to use the ```--no-recreate``` option of docker-compose to ensure that containers are not re-created and thus keep their names and ids.
-
-
-## Automatically create topics
-
-If you want to have kafka-docker automatically create topics in Kafka during
-creation, a ```KAFKA_CREATE_TOPICS``` environment variable can be
-added in ```docker-compose.yml```.
-
-Here is an example snippet from ```docker-compose.yml```:
-
-        environment:
-          KAFKA_CREATE_TOPICS: "Topic1:1:3,Topic2:1:1:compact"
-
-```Topic 1``` will have 1 partition and 3 replicas, ```Topic 2``` will have 1 partition, 1 replica and a `cleanup.policy` set to `compact`. Also, see FAQ: [Topic compaction does not work](https://github.com/wurstmeister/kafka-docker/wiki#topic-compaction-does-not-work)
-
-If you wish to use multi-line YAML or some other delimiter between your topic definitions, override the default `,` separator by specifying the `KAFKA_CREATE_TOPICS_SEPARATOR` environment variable.
-
-For example, `KAFKA_CREATE_TOPICS_SEPARATOR: "$$'\n'"` would use a newline to split the topic definitions. Syntax has to follow docker-compose escaping rules, and [ANSI-C](https://www.gnu.org/software/bash/manual/html_node/ANSI_002dC-Quoting.html) quoting.
-
-## Advertised hostname
-
-You can configure the advertised hostname in different ways
-
-1. explicitly, using ```KAFKA_ADVERTISED_HOST_NAME```
-2. via a command, using ```HOSTNAME_COMMAND```, e.g. ```HOSTNAME_COMMAND: "route -n | awk '/UG[ \t]/{print $$2}'"```
-
-When using commands, make sure you review the "Variable Substitution" section in [https://docs.docker.com/compose/compose-file/](https://docs.docker.com/compose/compose-file/#variable-substitution)
-
-If ```KAFKA_ADVERTISED_HOST_NAME``` is specified, it takes precedence over ```HOSTNAME_COMMAND```
-
-For AWS deployment, you can use the Metadata service to get the container host's IP:
+##  Pull 받은 후 Dockefile 수정하자.
 ```
-HOSTNAME_COMMAND=wget -t3 -T2 -qO-  http://169.254.169.254/latest/meta-data/local-ipv4
-```
-Reference: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
-
-### Injecting HOSTNAME_COMMAND into configuration
-
-If you require the value of `HOSTNAME_COMMAND` in any of your other `KAFKA_XXX` variables, use the `_{HOSTNAME_COMMAND}` string in your variable value, i.e.
+version: '2'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+  kafka:
+    build: .
+    ports:
+      - "9092"
+    environment:
+    // Kafka host로 사용할 장비의 IP. 개인 장비에서 돌릴거면 private IP, 그 외는 Public IP가 나와야 한다.
+    // 해당 IP를 Kafka host ip라고 부르겠다.
+      KAFKA_ADVERTISED_HOST_NAME: 10.64.52.218 
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
 
 ```
-KAFKA_ADVERTISED_LISTENERS=SSL://_{HOSTNAME_COMMAND}:9093,PLAINTEXT://9092
+
+##  도커 내부에 접속
+보통 다음과 같은 키워드로 접속을 할텐데
+`docker -it wurstmeister/kafka-docker /bin/bash`
+
+도큐먼트에서 제공하는 방향으로 접속을 하려면 다음과 같이 입력 해야한다.
+`$ start-kafka-shell.sh <DOCKER_HOST_IP> <ZK_HOST:ZK_PORT>`
+<br>
+앞서 수정한 Dockerfile을 바탕으로 위의 스크립트를 사용 하려면 아래와 같이 입력하면 되겠다.
+`./start-kafka-shell.sh 10.64.52.218 10.64.52.218:2181`
+
+## 컨슈머 접속 안되는 문제. 
+단순 도큐먼트만 본다면 다음 명령어를 입력할 것 같은데,
+`$KAFKA_HOME/bin/kafka-console-consumer.sh --topic=topic --zookeeper=$ZK
+zookeeper is not a recognized option`
+
+그러면 정확히 아래의 에러를 보게된다.
+```
+$KAFKA_HOME/bin/kafka-console-consumer.sh --topic=topic --zookeeper=$ZK
+zookeeper is not a recognized option
 ```
 
-## Advertised port
+이는 [요 문서](https://stackoverflow.com/questions/53428903/zookeeper-is-not-a-recognized-option-when-executing-kafka-console-consumer-sh)를 확인해보면 알 수 있는데
+`--zookeeper=10.64.52.218:2181`에서의 `--zookeeper` 옵션은 Deprecated 되었다. 
+대신 아래의 명령어로 대체 되었다. 
+`--bootstrap-server`
 
-If the required advertised port is not static, it may be necessary to determine this programatically. This can be done with the `PORT_COMMAND` environment variable.
+그럼 이런 명령어가 완성이 된다. 
+```
+$KAFKA_HOME/bin/kafka-console-consumer.sh --topic=topic --bootstrap-server=$ZK
+```
+위의 명령어를 실행하면 주키퍼에서는 아래와 같은 에러를 무한정으로 뱉는데,
 
 ```
-PORT_COMMAND: "docker port $$(hostname) 9092/tcp | cut -d: -f2"
+zookeeper_1  | 2021-03-24 13:09:14,685 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxnFactory@215] - Accepted socket connection from /172.18.0.1:51072
+zookeeper_1  | 2021-03-24 13:09:14,688 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:ZooKeeperServer@949] - Client attempting to establish new session at /172.18.0.1:51072
+zookeeper_1  | 2021-03-24 13:09:14,692 [myid:] - INFO  [SyncThread:0:ZooKeeperServer@694] - Established session 0x10000068f5b0004 with negotiated timeout 30000 for client /172.18.0.1:51072
+zookeeper_1  | 2021-03-24 13:09:14,916 [myid:] - INFO  [ProcessThread(sid:0 cport:2181)::PrepRequestProcessor@487] - Processed session termination for sessionid: 0x10000068f5b0004
+zookeeper_1  | 2021-03-24 13:09:14,922 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@1056] - Closed socket connection for client /172.18.0.1:51072 which had sessionid 0x10000068f5b0004
+zookeeper_1  | 2021-03-24 13:10:15,769 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxnFactory@215] - Accepted socket connection from /172.18.0.1:51090
+zookeeper_1  | 2021-03-24 13:10:15,788 [myid:] - WARN  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@383] - Exception causing close of session 0x0: Unreasonable length = 1818570083
+zookeeper_1  | 2021-03-24 13:10:15,788 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@1056] - Closed socket connection for client /172.18.0.1:51090 (no session established for client)
+zookeeper_1  | 2021-03-24 13:10:15,898 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxnFactory@215] - Accepted socket connection from /172.18.0.1:51096
+zookeeper_1  | 2021-03-24 13:10:15,899 [myid:] - WARN  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@383] - Exception causing close of session 0x0: Unreasonable length = 1818570083
+zookeeper_1  | 2021-03-24 13:10:15,899 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@1056] - Closed socket connection for client /172.18.0.1:51096 (no session established for client)
+zookeeper_1  | 2021-03-24 13:10:16,003 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxnFactory@215] - Accepted socket connection from /172.18.0.1:51102
+zookeeper_1  | 2021-03-24 13:10:16,004 [myid:] - WARN  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@383] - Exception causing close of session 0x0: Unreasonable length = 1818570083
+zookeeper_1  | 2021-03-24 13:10:16,005 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@1056] - Closed socket connection for client /172.18.0.1:51102 (no session established for client)
+zookeeper_1  | 2021-03-24 13:10:16,110 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxnFactory@215] - Accepted socket connection from /172.18.0.1:51108
+zookeeper_1  | 2021-03-24 13:10:16,112 [myid:] - WARN  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@383] - Exception causing close of session 0x0: Unreasonable length = 1818570083
+zookeeper_1  | 2021-03-24 13:10:16,112 [myid:] - INFO  [NIOServerCxn.Factory:0.0.0.0/0.0.0.0:2181:NIOServerCnxn@1056] - Closed socket connection for client /172.18.0.1:51108 (no session established for client)
 ```
 
-This can be then interpolated in any other `KAFKA_XXX` config using the `_{PORT_COMMAND}` string, i.e.
-
+이는 기본 레포에 있는 스크립트를 실행하여 브로커의 정보를 가져오면 된다. 
 ```
-KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://1.2.3.4:_{PORT_COMMAND}
+$ ./broker-list.sh
+:32772
 ```
-
-## Listener Configuration
-
-It may be useful to have the [Kafka Documentation](https://kafka.apache.org/documentation/) open, to understand the various broker listener configuration options.
-
-Since 0.9.0, Kafka has supported [multiple listener configurations](https://issues.apache.org/jira/browse/KAFKA-1809) for brokers to help support different protocols and discriminate between internal and external traffic. Later versions of Kafka have deprecated ```advertised.host.name``` and ```advertised.port```.
-
-**NOTE:** ```advertised.host.name``` and ```advertised.port``` still work as expected, but should not be used if configuring the listeners.
-
-### Example
-
-The example environment below:
-
+가져온 정보를 바탕으로 다음과 같이 실행하자. 
 ```
-HOSTNAME_COMMAND: curl http://169.254.169.254/latest/meta-data/public-hostname
-KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://_{HOSTNAME_COMMAND}:9094
-KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
-KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+$KAFKA_HOME/bin/kafka-console-consumer.sh --bootstrap-server 10.64.52.218:32772 --topic "topic" --from-beginning
 ```
 
-Will result in the following broker config:
+정상 실행된다.
 
-```
-advertised.listeners = OUTSIDE://ec2-xx-xx-xxx-xx.us-west-2.compute.amazonaws.com:9094,INSIDE://:9092
-listeners = OUTSIDE://:9094,INSIDE://:9092
-inter.broker.listener.name = INSIDE
-```
 
-### Rules
-
-* No listeners may share a port number.
-* An advertised.listener must be present by protocol name and port number in the list of listeners.
-
-## Broker Rack
-
-You can configure the broker rack affinity in different ways
-
-1. explicitly, using ```KAFKA_BROKER_RACK```
-2. via a command, using ```RACK_COMMAND```, e.g. ```RACK_COMMAND: "curl http://169.254.169.254/latest/meta-data/placement/availability-zone"```
-
-In the above example the AWS metadata service is used to put the instance's availability zone in the ```broker.rack``` property.
-
-## JMX
-
-For monitoring purposes you may wish to configure JMX. Additional to the standard JMX parameters, problems could arise from the underlying RMI protocol used to connect
-
-* java.rmi.server.hostname - interface to bind listening port
-* com.sun.management.jmxremote.rmi.port - The port to service RMI requests
-
-For example, to connect to a kafka running locally (assumes exposing port 1099)
-
-      KAFKA_JMX_OPTS: "-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1 -Dcom.sun.management.jmxremote.rmi.port=1099"
-      JMX_PORT: 1099
-
-Jconsole can now connect at ```jconsole 192.168.99.100:1099```
-
-## Docker Swarm Mode
-
-The listener configuration above is necessary when deploying Kafka in a Docker Swarm using an overlay network. By separating OUTSIDE and INSIDE listeners, a host can communicate with clients outside the overlay network while still benefiting from it from within the swarm.
-
-In addition to the multiple-listener configuration, additional best practices for operating Kafka in a Docker Swarm include:
-
-* Use "deploy: global" in a compose file to launch one and only one Kafka broker per swarm node.
-* Use compose file version '3.2' (minimum Docker version 16.04) and the "long" port definition with the port in "host" mode instead of the default "ingress" load-balanced port binding. This ensures that outside requests are always routed to the correct broker. For example:
-
-```
-ports:
-   - target: 9094
-     published: 9094
-     protocol: tcp
-     mode: host
-```
-
-Older compose files using the short-version of port mapping may encounter Kafka client issues if their connection to individual brokers cannot be guaranteed.
-
-See the included sample compose file ```docker-compose-swarm.yml```
-
-## Release process
-
-See the [wiki](https://github.com/wurstmeister/kafka-docker/wiki/ReleaseProcess) for information on adding or updating versions to release to Dockerhub.
-
-## Tutorial
-
-[http://wurstmeister.github.io/kafka-docker/](http://wurstmeister.github.io/kafka-docker/)
